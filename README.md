@@ -1,6 +1,6 @@
 # Create: Stock Market
 
-**Minecraft 1.21.1 · NeoForge · Fabric · v0.4.2**
+**Minecraft 1.20.1 · Fabric (backport) · v1.1.1**
 
 Turn your server's player economy into a real-time stock exchange.  
 Place the **Market Terminal**, right-click it — and get a live dashboard of every shop, price trend, and top trader on the server.
@@ -11,29 +11,27 @@ Place the **Market Terminal**, right-click it — and get a live dashboard of ev
 
 | Mod | Required? |
 |-----|-----------|
-| [Create](https://modrinth.com/mod/create) 6.0.9+ | ✅ Required |
-| [Create: Numismatics](https://modrinth.com/mod/numismatics) 1.0.19+ | ⚠️ Optional |
-| [Tradeworks](https://modrinth.com/mod/tradeworks) 1.0.0+ | ⚠️ Optional |
+| [Fabric API](https://modrinth.com/mod/fabric-api) | ✅ Required |
+| [Create Fabric](https://modrinth.com/mod/create-fabric) 6.0.8+ | ✅ Required |
+| [Create: Numismatics](https://modrinth.com/mod/numismatics) 1.1.0+ (Fabric 1.20.1) | ⚠️ Optional |
 | [Xaero's Minimap](https://modrinth.com/mod/xaeros-minimap) | ⚠️ Optional |
 
-> **Without Numismatics** — coin prices and Vendor shops won't appear, but TableCloth barter shops still work.  
-> **Without Tradeworks** — TableCloth shops won't be indexed.
+> **Without Numismatics** — coin prices and Vendor shops won't appear, but TableCloth barter shops still work.
 
 ---
 
 ## 📦 Craft the Market Terminal
 
 ```
-G C G
-I B I
-G C G
+G
+C
+P
 
-G = Gold Ingot    C = Comparator
-I = Iron Ingot    B = Iron Block
+G = Framed Glass   C = Brass Casing   P = Precision Mechanism
 ```
 
 Place it anywhere, right-click to open the market screen.  
-You can also press **M** (configurable in Controls → Create: StockMarket) to open it from anywhere.
+The **Market Remote** (Iron Nugget ×6, Redstone, Ender Pearl, Market Terminal) opens it from anywhere.
 
 ---
 
@@ -45,7 +43,7 @@ The screen is fully responsive — it scales with your GUI size and fits any res
 
 ### 🛍️ Shops Tab
 
-A live list of every active shop on the server — both **Numismatics Vendor** and **Create Tradeworks TableCloth** shops.
+A live list of every active shop on the server — both **Numismatics Vendor** and **Create TableCloth** shops.
 
 **Columns:** ★ Favourite · Item · Price · Owner · Mode (SELL / BUY) · Dimension
 
@@ -87,7 +85,7 @@ A **stock-exchange-style** view of the server economy, aggregated by item.
 
 **Two sections in one scrollable list:**
 - **Coin prices** (top) — Numismatics Vendor shops with sortable coin prices
-- **Barter** (bottom) — Tradeworks TableCloth shops showing payment item and sell/buy count
+- **Barter** (bottom) — Create TableCloth shops showing payment item and sell/buy count
 
 **Price history engine:**
 - Server takes a snapshot every **10 minutes**
@@ -110,8 +108,8 @@ A leaderboard of the most active traders on the server.
 
 ## ⚙️ Technical
 
-- Shop indexing is **automatic** — chunks loading and blocks being placed/broken trigger re-indexing
-- Data is sent to the client **on demand** (right-click block or press M) — no polling overhead
+- Shop indexing is **automatic** — block entities loading and blocks being broken trigger re-indexing, plus a periodic rescan
+- Data is sent to the client **on demand** (right-click the block, or use the remote) — no polling overhead
 - No commands required — everything is block-based
-- Fully compatible with both **NeoForge** and **Fabric** (shared common module via Architectury)
+- This branch is the **Fabric 1.20.1** backport (single module, Mojang mappings); the NeoForge 1.21.1 version is a separate codebase
 
