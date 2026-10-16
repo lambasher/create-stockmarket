@@ -1,39 +1,112 @@
-// Root build.gradle
-// Applies the convention plugin and shared repositories to every subproject.
+// Single-module Fabric 1.20.1 build.
+// Create Fabric 1.20.1 recommends Loom 1.10.x — newer Loom needs a newer Java, which breaks 1.20.1 tooling.
 
-subprojects {
-    apply plugin: 'mymod.common-conventions'
+plugins {
+    id 'fabric-loom' version '1.10.5'
+}
 
-    repositories {
-        mavenCentral()
-        // Create, Ponder, Flywheel
-        maven { url = 'https://maven.createmod.net'          }
-        // Registrate
-        maven { url = 'https://maven.ithundxr.dev/snapshots' }
-        // Modrinth Maven (Numismatics + others)
-        maven {
-            name = 'Modrinth'
-            url  = 'https://api.modrinth.com/maven'
-            content { includeGroup 'maven.modrinth' }
-        }
-        // JEI
-        maven {
-            name = 'JEI'
-            url  = 'https://maven.blamejared.com'
-        }
-        // REI
-        maven {
-            name = 'REI'
-            url  = 'https://maven.shedaniel.me'
-        }
-        // Xaero's Maps
-        maven {
-            url  = 'https://chocolateminecraft.com/maven'
-            name = "Xaero's Maven"
-        }
-        // NeoForge releases
-        maven { url = 'https://maven.neoforged.net/releases'  }
-        // Fabric
-        maven { url = 'https://maven.fabricmc.net/'           }
+version = project.mod_version
+group   = project.mod_group_id
+
+base {
+    archivesName = "${project.mod_id}-fabric-${project.minecraft_version}"
+}
+
+repositories {
+    mavenCentral()
+
+    // Create Fabric's own dependency repos (needed to resolve its nested/transitive mods in dev)
+    exclusiveContent {
+        forRepository { maven { url = 'https://maven.createmod.net' } }
+        filter { includeGroupAndSubgroups('net.createmod'); includeGroupAndSubgroups('dev.engine-room') }
     }
+    exclusiveContent {
+        forRepository { maven { url = 'https://mvn.devos.one/snapshots' } }
+        filter { includeGroupAndSubgroups('com.tterrag.registrate_fabric'); includeGroupAndSubgroups('io.github.tropheusj') }
+    }
+    exclusiveContent {
+        forRepository { maven { url = 'https://mvn.devos.one/releases' } }
+        filter { includeGroupAndSubgroups('io.github.fabricators_of_create.Porting-Lib') }
+    }
+    exclusiveContent {
+        forRepository { maven { url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven' } }
+        filter { includeGroupAndSubgroups('fuzs.forgeconfigapiport') }
+    }
+    exclusiveContent {
+        forRepository { maven { url = 'https://maven.jamieswhiteshirt.com/libs-release' } }
+        filter { includeGroupAndSubgroups('com.jamieswhiteshirt') }
+    }
+
+    // Create Fabric + Numismatics (Modrinth Maven)
+    exclusiveContent {
+        forRepository { maven { url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup('maven.modrinth') }
+    }
+}
+
+loom {
+    accessWidenerPath = file('src/main/resources/stockmarket.accesswidener')
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    // ── Minecraft + Fabric ────────────────────────────────────────────────────
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // Mojang names keep the existing code's class/method names as close as possible to the 1.21 source.
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // ── Create Fabric (required) — Ponder, Flywheel, Registrate, Catnip are nested inside it ──
+    modImplementation "maven.modrinth:create-fabric:${project.create_fabric_version}"
+    // Catnip (IntAttached etc.) ships inside Ponder; Create's nested jars are not on the compile classpath.
+    modImplementation "net.createmod.ponder:Ponder-Fabric-1.20.1:${project.ponder_version}"
+
+    // Registrate — Create's API signatures mention its entry types, so javac needs it on the classpath.
+    // Non-transitive: its Porting-Lib 2.1.x dependencies are not what Create ships (2.3.x, nested).
+    modImplementation("com.tterrag.registrate_fabric:Registrate:${project.registrate_version}") { transitive = false }
+
+    // ── Forge Config API Port — nested inside Create Fabric at runtime; needed on the compile classpath ──
+    modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${project.forge_config_version}"
+
+    // ── Create: Numismatics (optional at runtime, compiled against 1.1.0) ─────
+    modImplementation "maven.modrinth:numismatics:${project.numismatics_version}"
+}
+
+processResources {
+    def props = [
+        mod_id         : project.mod_id,
+        mod_name       : project.mod_name,
+        mod_version    : project.mod_version,
+        mod_authors    : project.mod_authors,
+        mod_description: project.mod_description,
+        mod_license    : project.mod_license,
+        minecraft_version    : project.minecraft_version,
+        fabric_loader_version: project.fabric_loader_version,
+        fabric_api_version   : project.fabric_api_version,
+    ]
+    inputs.properties props
+    filesMatching('fabric.mod.json') {
+        expand props
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release  = 17   // Minecraft 1.20.1 runs on Java 17
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+    from('LICENSE') { rename { "${it}_${project.base.archivesName.get()}" } }
 }
